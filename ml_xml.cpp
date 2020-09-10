@@ -1,18 +1,17 @@
-#include <WebServices.h>
 #include <comutil.h>
 #include <shlwapi.h>
 #include <shlobj.h>
 #include <fstream>
+#include <tchar.h>
+#include "rapidxml_utils.hpp"
 #include "ml_xml.hpp"
-
-#pragma comment(lib, "WebServices.lib")
 
 BOOL StrToBOOL(LPCTSTR lpstr) {
 	return (StrCmpI(lpstr, TEXT("true")) == 0 || StrCmpI(lpstr, TEXT("yes")) == 0) ?
 		TRUE : FALSE;
 }
 
-tstring WINAPI xml_ExpandEnvironmentStrings(const tstring& str) {
+tstring WINAPI ml_ExpandEnvironmentStrings(const tstring& str) {
 	int size = ExpandEnvironmentStrings(str.c_str(), NULL, 0);
 	if (size > 0) {
 		// std::vector<char> buff(size); 
@@ -88,11 +87,11 @@ HBITMAP WINAPI GetIconBitmap(const AttributeMap& attr) {
 	if (icon != attr.end()) {
 		AttributeMap::const_iterator index = attr.find(TEXT("index"));
 		if (index != attr.end()) {
-			ExtractIconEx(xml_ExpandEnvironmentStrings(icon->second).c_str(),
+			ExtractIconEx(ml_ExpandEnvironmentStrings(icon->second).c_str(),
 				StrToInt(index->second.c_str()), NULL, &hIcon, 1);
 		}
 		else {
-			if (SHGetFileInfo(xml_ExpandEnvironmentStrings(icon->second).c_str(),
+			if (SHGetFileInfo(ml_ExpandEnvironmentStrings(icon->second).c_str(),
 				0, &sfi, sizeof(SHFILEINFO), SHGFI_ICON | SHGFI_SMALLICON))
 				hIcon = sfi.hIcon;
 		}
@@ -100,7 +99,7 @@ HBITMAP WINAPI GetIconBitmap(const AttributeMap& attr) {
 	else {
 		AttributeMap::const_iterator path = attr.find(TEXT("path"));
 		if (path != attr.end()) {
-			if (SHGetFileInfo(xml_ExpandEnvironmentStrings(path->second).c_str(),
+			if (SHGetFileInfo(ml_ExpandEnvironmentStrings(path->second).c_str(),
 				0, &sfi, sizeof(SHFILEINFO), SHGFI_ICON | SHGFI_SMALLICON))
 				hIcon = sfi.hIcon;
 		}
@@ -138,104 +137,88 @@ HBITMAP WINAPI GetDesktopIcon() {
 	return hBitmap;
 }
 
-BOOL WINAPI LoadMenuItems(IXMLDOMNodePtr node, HMENU hMenu, MLMenu& mlm) {
-	IXMLDOMNodeListPtr children{ nullptr };
-	node->get_childNodes(&children);
-	if (children == NULL)
-		return TRUE;
-	while (true) {
-		IXMLDOMNodePtr child;
-		children->nextNode(&child);
-		if (child == NULL)
-			break;
-		DOMNodeType type;
-		child->get_nodeType(&type);
-		if (type == NODE_ELEMENT) {
-			_bstr_t name;
-			child->get_nodeName(name.GetAddress());
-			AttributeMap attrmap;
-			GetAttributes(child, attrmap);
+BOOL WINAPI LoadMenuItems(xml_node<TCHAR>* parent_node, HMENU hMenu, MLMenu& mlm) {
+	for(xml_node<TCHAR> *node = parent_node->first_node(); node; node = node->next_sibling()) {
+		AttributeMap attr_map;
+		GetAttributes(node, attr_map);
 
-			if (lstrcmp((LPTSTR)name, TEXT("item")) == 0 ||
-				lstrcmp((LPTSTR)name, TEXT("execute")) == 0) {
+		if (lstrcmpi(node->name(), TEXT("item")) == 0 ||
+			lstrcmpi(node->name(), TEXT("execute")) == 0) {
+			MenuItem mi = { MenuItem::EXECUTE };
+			mi.execute.Path = ml_ExpandEnvironmentStrings(attr_map[TEXT("path")]);
+			mi.execute.Param = ml_ExpandEnvironmentStrings(attr_map[TEXT("param")]);
+			mlm.MenuItems.push_back(mi);
+
+			HBITMAP hBitmap = mlm.bShowIcon ? GetIconBitmap(attr_map) : NULL;
+			if (hBitmap != NULL)
+				mlm.hBitmaps.push_back(hBitmap);
+			int ID = mlm.MenuItems.size();
+			AppendMenuItem(hMenu, attr_map[TEXT("title")].c_str(), hBitmap, NULL, ID);
+		}
+		else if (lstrcmpi(node->name(), TEXT("command")) == 0) {
+			MenuItem mi = { MenuItem::PLUGINCOMMAND };
+			mi.command.PluginFilename = ml_ExpandEnvironmentStrings(attr_map[TEXT("filename")]);
+			mi.command.CommandID = StrToInt(attr_map[TEXT("id")].c_str());
+			mlm.MenuItems.push_back(mi);
+
+			HBITMAP hBitmap = NULL;
+			if (attr_map.find(TEXT("icon")) != attr_map.end()) {
+				hBitmap = mlm.bShowIcon ? GetIconBitmap(attr_map) : NULL;
+			}
+			else {
+				SHFILEINFO	sfi = { 0 };
+				if (SHGetFileInfo(TEXT("*.dll"), 0, &sfi, sizeof(SHFILEINFO),
+					SHGFI_ICON | SHGFI_SMALLICON | SHGFI_USEFILEATTRIBUTES)) {
+					hBitmap = IconToBitmap(sfi.hIcon);
+					DestroyIcon(sfi.hIcon);
+				}
+			}
+			int ID = mlm.MenuItems.size();
+			AppendMenuItem(hMenu, attr_map[TEXT("title")].c_str(), hBitmap, NULL, ID);
+		}
+		else if (lstrcmpi(node->name(), TEXT("submenu")) == 0) {
+			HBITMAP hBitmap = mlm.bShowIcon ? GetIconBitmap(attr_map) : NULL;
+			if (hBitmap != NULL)
+				mlm.hBitmaps.push_back(hBitmap);
+			HMENU hSubMenu = CreatePopupMenu();
+			AppendMenuItem(hMenu, attr_map[TEXT("title")].c_str(), hBitmap, hSubMenu, 0);
+
+			LoadMenuItems(node, hSubMenu, mlm);
+
+			if (attr_map.find(TEXT("path")) != attr_map.end()) {
 				MenuItem mi = { MenuItem::EXECUTE };
-				mi.execute.Path = xml_ExpandEnvironmentStrings(attrmap[TEXT("path")]);
-				mi.execute.Param = xml_ExpandEnvironmentStrings(attrmap[TEXT("param")]);
+				mi.execute.Path = ml_ExpandEnvironmentStrings(attr_map[TEXT("path")]);
+				mi.execute.Param = ml_ExpandEnvironmentStrings(attr_map[TEXT("param")]);
 				mlm.MenuItems.push_back(mi);
-
-				HBITMAP hBitmap = mlm.bShowIcon ? GetIconBitmap(attrmap) : NULL;
-				if (hBitmap != NULL)
-					mlm.hBitmaps.push_back(hBitmap);
 				int ID = mlm.MenuItems.size();
-				AppendMenuItem(hMenu, attrmap[TEXT("title")].c_str(), hBitmap, NULL, ID);
+				AppendMenu(hSubMenu, MF_STRING | MF_OWNERDRAW, ID, TEXT(" "));
+				SetMenuDefaultItem(hSubMenu, ID, FALSE);
 			}
-			else if (lstrcmp((LPTSTR)name, TEXT("command")) == 0) {
-				MenuItem mi = { MenuItem::PLUGINCOMMAND };
-				mi.command.PluginFilename = xml_ExpandEnvironmentStrings(attrmap[TEXT("filename")]);
-				mi.command.CommandID = StrToInt(attrmap[TEXT("id")].c_str());
-				mlm.MenuItems.push_back(mi);
+		}
+		else if (lstrcmpi(node->name(), TEXT("separator")) == 0) {
+			AppendMenu(hMenu, MF_SEPARATOR, 0, 0);
+		}
+		else if (lstrcmpi(node->name(), TEXT("folder")) == 0) {
+			HBITMAP hBitmap = mlm.bShowIcon ? (attr_map.find(TEXT("path")) == attr_map.end() ?
+				GetDesktopIcon() : GetIconBitmap(attr_map)) : NULL;
+			if (hBitmap != NULL)
+				mlm.hBitmaps.push_back(hBitmap);
 
-				HBITMAP hBitmap = NULL;
-				if (attrmap.find(TEXT("icon")) != attrmap.end()) {
-					hBitmap = mlm.bShowIcon ? GetIconBitmap(attrmap) : NULL;
-				}
-				else {
-					SHFILEINFO	sfi = { 0 };
-					if (SHGetFileInfo(TEXT("*.dll"), 0, &sfi, sizeof(SHFILEINFO),
-						SHGFI_ICON | SHGFI_SMALLICON | SHGFI_USEFILEATTRIBUTES)) {
-						hBitmap = IconToBitmap(sfi.hIcon);
-						DestroyIcon(sfi.hIcon);
-					}
-				}
-				int ID = mlm.MenuItems.size();
-				AppendMenuItem(hMenu, attrmap[TEXT("title")].c_str(), hBitmap, NULL, ID);
-			}
-			else if (lstrcmp((LPTSTR)name, TEXT("submenu")) == 0) {
-				HBITMAP hBitmap = mlm.bShowIcon ? GetIconBitmap(attrmap) : NULL;
-				if (hBitmap != NULL)
-					mlm.hBitmaps.push_back(hBitmap);
-				HMENU hSubMenu = CreatePopupMenu();
-				AppendMenuItem(hMenu, attrmap[TEXT("title")].c_str(), hBitmap, hSubMenu, 0);
+			HMENU hSubMenu = CreatePopupMenu();
 
-				LoadMenuItems(child, hSubMenu, mlm);
-
-				if (attrmap.find(TEXT("path")) != attrmap.end()) {
-					MenuItem mi = { MenuItem::EXECUTE };
-					mi.execute.Path = xml_ExpandEnvironmentStrings(attrmap[TEXT("path")]);
-					mi.execute.Param = xml_ExpandEnvironmentStrings(attrmap[TEXT("param")]);
-					mlm.MenuItems.push_back(mi);
-					int ID = mlm.MenuItems.size();
-					AppendMenu(hSubMenu, MF_STRING | MF_OWNERDRAW, ID, TEXT(" "));
-					SetMenuDefaultItem(hSubMenu, ID, FALSE);
-				}
-			}
-			else if (lstrcmp((LPTSTR)name, TEXT("separator")) == 0) {
-				AppendMenu(hMenu, MF_SEPARATOR, 0, 0);
-			}
-			else if (lstrcmp((LPTSTR)name, TEXT("folder")) == 0) {
-				HBITMAP hBitmap = mlm.bShowIcon ? (attrmap.find(TEXT("path")) == attrmap.end() ?
-					GetDesktopIcon() : GetIconBitmap(attrmap)) : NULL;
-				if (hBitmap != NULL)
-					mlm.hBitmaps.push_back(hBitmap);
-
-				HMENU hSubMenu = CreatePopupMenu();
-
-				FolderMenu fm = { xml_ExpandEnvironmentStrings(attrmap[TEXT("path")]),
-					attrmap.find(TEXT("showicon")) == attrmap.end() ?
-						mlm.bShowIcon : StrToBOOL(attrmap[TEXT("showicon")].c_str()),
-					attrmap.find(TEXT("folderonly")) == attrmap.end() ?
-						FALSE : StrToBOOL(attrmap[TEXT("folderonly")].c_str()) };
-				mlm.FolderMenus.insert(std::make_pair(hSubMenu, fm));
-				AppendMenuItem(hMenu, attrmap[TEXT("title")].c_str(), hBitmap, hSubMenu, 0);
-			}
-			child->Release();
+			FolderMenu fm = { ml_ExpandEnvironmentStrings(attr_map[TEXT("path")]),
+				attr_map.find(TEXT("showicon")) == attr_map.end() ?
+					mlm.bShowIcon : StrToBOOL(attr_map[TEXT("showicon")].c_str()),
+				attr_map.find(TEXT("folderonly")) == attr_map.end() ?
+					FALSE : StrToBOOL(attr_map[TEXT("folderonly")].c_str()) };
+			mlm.FolderMenus.insert(std::make_pair(hSubMenu, fm));
+			AppendMenuItem(hMenu, attr_map[TEXT("title")].c_str(), hBitmap, hSubMenu, 0);
 		}
 	}
-	children->Release();
 	return TRUE;
 }
 
-BOOL WINAPI xml_LoadMenu(IXMLDOMNodePtr node, MLMenu& mlm) {
+BOOL WINAPI LoadMenu(xml_node<TCHAR>* node, MLMenu& mlm) {
 	LoadMenuItems(node, mlm.hMenu, mlm);
 
 	MENUINFO mi = { 0 };
@@ -248,169 +231,97 @@ BOOL WINAPI xml_LoadMenu(IXMLDOMNodePtr node, MLMenu& mlm) {
 }
 
 BOOL WINAPI LoadXML(LPCTSTR szFileName, MLMenu& mlm) {
-	WS_XML_STRING               xml;
-	WS_CHARSET					xml_charset;
-	WS_ERROR*                   xml_error;
-	WS_XML_READER*              xml_reader;
-	WS_XML_READER_BUFFER_INPUT  xml_buf_input;
-	WS_XML_READER_TEXT_ENCODING xml_txt_encoding;
-
-	ZeroMemory(&xml, sizeof(xml));
-	std::basic_ifstream<BYTE> ifs(szFileName, std::ios::binary);
+	std::vector<TCHAR>         xml;
+	size_t                     xml_size;
+	std::basic_ifstream<TCHAR> ifs(szFileName, std::ios::binary);
 	if (!ifs) {
 		MessageBox(NULL, TEXT("XMLファイルが開けませんでした"), TEXT("設定ファイルの読み込みエラー"), MB_OK | MB_ICONERROR);
 		return FALSE;
 	}
 	ifs.unsetf(std::ios::skipws);
 	ifs.seekg(0, std::ios::end);
-	xml.length = ifs.tellg();
+	xml_size = ifs.tellg();
 	ifs.seekg(0);
-	ifs.read(xml.bytes, xml.length);
+	xml.resize(xml_size + 1);
+	ifs.read(&xml.front(), static_cast<std::streamsize>(xml_size));
+	xml[xml_size] = 0;
 	ifs.close();
-
-	if (FAILED(WsCreateError(NULL, 0, &xml_error))) {
-		MessageBox(NULL, TEXT("WebServicesErrorの作成に失敗しました"), TEXT("設定ファイルの読み込みエラー"), MB_OK | MB_ICONERROR);
-		return FALSE;
-	}
-	if (FAILED(WsCreateReader(NULL, 0, &xml_reader, xml_error))) {
-		MessageBox(NULL, TEXT("XML Readerの作成に失敗しました"), TEXT("設定ファイルの読み込みエラー"), MB_OK | MB_ICONERROR);
-		return FALSE;
-	}
-
-	ZeroMemory(&xml_buf_input, sizeof(xml_buf_input));
-	xml_buf_input.input.inputType = WS_XML_READER_INPUT_TYPE_BUFFER;
-	xml_buf_input.encodedData = xml.bytes;
-	xml_buf_input.encodedDataSize = xml.length;
-
-	ZeroMemory(&xml_txt_encoding, sizeof(xml_txt_encoding));
-	xml_txt_encoding.encoding.encodingType = WS_XML_READER_ENCODING_TYPE_TEXT;
-	xml_txt_encoding.charSet = WS_CHARSET_AUTO;
-
-	if (FAILED(WsSetInput(xml_reader, &xml_txt_encoding.encoding, &xml_buf_input.input, NULL, 0, xml_error))) {
-		MessageBox(NULL, TEXT("XMLのロード先のバッファの作成に失敗しました"), TEXT("設定ファイルの読み込みエラー"), MB_OK | MB_ICONERROR);
-		return FALSE;
-	}
-	if (FAILED(WsGetReaderProperty(xml_reader, WS_XML_READER_PROPERTY_CHARSET, &xml_charset, sizeof(xml_charset), xml_error))) {
-		MessageBox(NULL, TEXT("XMLの文字コード取得に失敗しました"), TEXT("設定ファイルの読み込みエラー"), MB_OK | MB_ICONERROR);
-		return FALSE;
-	}
-
-	int depth = 0;
-	for (;;) {
-		const WS_XML_NODE *node;
-		if (FAILED(WsGetReaderNode(xml_reader, &node, xml_error))) {
-			MessageBox(NULL, TEXT("XML要素の取得に失敗しました"), TEXT("設定ファイルの読み込みエラー"), MB_OK | MB_ICONERROR);
-			return FALSE;
-		}
-		switch (node->nodeType) {
-		case WS_XML_NODE_TYPE_ELEMENT:
-			const WS_XML_ELEMENT_NODE *element_node = (const WS_XML_ELEMENT_NODE *)element_node;
-			switch (depth) {
-			case 0:
-				Match(element_node->prefix, TEXT("menulaunch"));
-			}
-			depth++;
-			break;
-		case WS_XML_NODE_TYPE_END_ELEMENT:
-			depth--;
-			break;
-		}
-	}
-	else {
-		LoadSettings(xmldom, mlm);
-		IXMLDOMNodePtr menunode = NULL;
-		if (xmldom->selectSingleNode(_bstr_t("/menulaunch/menu"), &menunode) == S_OK) {
-			mlm.hMenu = CreatePopupMenu();
-			xml_LoadMenu(menunode, mlm);
-		}
-		else {
-			MessageBox(NULL, TEXT("menuエレメントがありません"), TEXT("設定ファイルの読み込みエラー"), MB_OK | MB_ICONERROR);
-			bRes = FALSE;
-		}
-
-		if (menunode != NULL) {
-			menunode->Release();
-		}
-	}
-
-	return TRUE;
-}
-
-BOOL WINAPI Match(const WS_XML_STRING *xml_str, LPCTSTR tchar) {
-	LPTSTR xml_tchar = nullptr;
-	int    xml_tchar_num = 0;
-#ifdef UNICODE || _UNICODE
-	if ((xml_tchar_num = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, (char*)xml_str->bytes, xml_str->length, NULL, 0)) == 0) {
-		if (lstrlen(tchar) == 0) { return TRUE; }
-		else { return FALSE; }
-	}
-	xml_tchar = (LPTSTR)HeapAlloc(GetProcessHeap(), 0, xml_tchar_num * sizeof(TCHAR));
-
-	if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, (char*)xml_str->bytes, xml_str->length, xml_tchar, xml_tchar_num) != xml_tchar_num) {
-		if (xml_tchar != nullptr) { HeapFree(GetProcessHeap(), 0, xml_tchar); }
-		return FALSE;
-	}
-#else 
-
+	xml_document<TCHAR> xml_doc;
+	try {
+		xml_doc.parse<0>(&xml.front());
+	} catch (parse_error &err) {
+		LPTSTR buf;
+#if UNICODE || _UNICODE
+		wchar_t wch_err_what[512];
+		MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, err.what(), strlen(err.what()), wch_err_what, sizeof(wch_err_what) / sizeof(wchar_t));
+		wsprintf(buf, TEXT("%s %s"), wch_err_what, err.where<TCHAR>());
+#else
+		wsprintf(buf, TEXT("%s %s"), err.what(), err.where<TCHAR>());
 #endif
+		MessageBox(NULL, buf, TEXT("設定ファイルの読み込みエラー"), MB_OK | MB_ICONERROR);
+		return FALSE;
+	}
+	
+	xml_node<TCHAR> *node = xml_doc.first_node();
+	if (lstrcmpi(node->name(), TEXT("menulaunch")) != 0) {
+		MessageBox(NULL, TEXT("XMLファイルに<menulaunch>が見当たりません"), TEXT("設定ファイルの読み込みエラー"), MB_OK | MB_ICONERROR);
+		return FALSE;
+	}
+	node = node->first_node();
+	if (lstrcmpi(node->name(), TEXT("setting")) != 0) {
+		MessageBox(NULL, TEXT("XMLファイルに<setting>が見当たりません"), TEXT("設定ファイルの読み込みエラー"), MB_OK | MB_ICONERROR);
+		return FALSE;
+	}
+	LoadSettings(node, mlm);
+	node = node->next_sibling();
+	if (lstrcmpi(node->name(), TEXT("menu")) != 0) {
+		MessageBox(NULL, TEXT("XMLファイルに<menu>が見当たりません"), TEXT("設定ファイルの読み込みエラー"), MB_OK | MB_ICONERROR);
+		return FALSE;
+	}
+	mlm.hMenu = CreatePopupMenu();
+	LoadMenu(node, mlm);
+
+	return TRUE;
 }
 
-BOOL WINAPI GetAttributes(IXMLDOMNodePtr node, AttributeMap& attr) {
-	IXMLDOMNamedNodeMapPtr attrmap{ nullptr };
-	node->get_attributes(&attrmap);
-	if (attrmap != NULL) {
-		while (true) {
-			IXMLDOMNodePtr attrnode = NULL;
-			attrmap->nextNode(&attrnode);
-			if (attrnode == NULL)
-				break;
-			_bstr_t name;
-			_variant_t value;
-			attrnode->get_nodeName(name.GetAddress());
-			attrnode->get_nodeValue(value.GetAddress());
-			attr.insert(std::make_pair(tstring(name), _bstr_t(value.bstrVal)));
-			attrnode->Release();
-		}
-		attrmap->Release();
+BOOL WINAPI GetAttributes(xml_node<TCHAR> *node, AttributeMap &attr_map) {
+	for (xml_attribute<TCHAR> *attr = node->first_attribute(); attr; attr = attr->next_attribute()) {
+		attr_map.insert(std::make_pair(attr->name(), attr->value()));
 	}
 	return TRUE;
 }
 
-BOOL WINAPI LoadSettings(IXMLDOMNodePtr node, MLMenu& mlm) {
-	IXMLDOMNodePtr settingnode{ nullptr };
+BOOL WINAPI LoadSettings(xml_node<TCHAR>* node, MLMenu& mlm) {
 	mlm.bShowIcon = TRUE;
 	mlm.MenuPos.type = CURSOR;
 	mlm.MenuPos.x = 0;
 	mlm.MenuPos.y = 0;
 
-	if (node->selectSingleNode(_bstr_t(TEXT("/menulaunch/setting")), &settingnode) == S_OK) {
-		AttributeMap attr;
-		GetAttributes(settingnode, attr);
-		mlm.bShowIcon = StrToBOOL(attr[TEXT("icon")].c_str());
-		AttributeMap::iterator menupos = attr.find(TEXT("menupos"));
-		if (menupos != attr.end()) {
-			if (menupos->second == TEXT("マウスカーソル"))
-				mlm.MenuPos.type = CURSOR;
-			else if (menupos->second == TEXT("中央"))
-				mlm.MenuPos.type = CENTER;
-			else if (menupos->second == TEXT("左上"))
-				mlm.MenuPos.type = TOPLEFT;
-			else if (menupos->second == TEXT("右上"))
-				mlm.MenuPos.type = TOPRIGHT;
-			else if (menupos->second == TEXT("左下"))
-				mlm.MenuPos.type = BOTTOMLEFT;
-			else if (menupos->second == TEXT("右下"))
-				mlm.MenuPos.type = BOTTOMRIGHT;
-			else {
-				int x = 0, y = 0;
-				if ((_stscanf_s(menupos->second.c_str(), TEXT("%d,%d"), &x, &y)) == 2) {
-					mlm.MenuPos.type = COORDINATE;
-					mlm.MenuPos.x = x;
-					mlm.MenuPos.y = y;
-				}
+	AttributeMap attr_map;
+	GetAttributes(node, attr_map);
+	mlm.bShowIcon = StrToBOOL(attr_map[TEXT("icon")].c_str());
+	AttributeMap::iterator menupos = attr_map.find(TEXT("menupos"));
+	if (menupos != attr_map.end()) {
+		if (menupos->second == TEXT("マウスカーソル"))
+			mlm.MenuPos.type = CURSOR;
+		else if (menupos->second == TEXT("中央"))
+			mlm.MenuPos.type = CENTER;
+		else if (menupos->second == TEXT("左上"))
+			mlm.MenuPos.type = TOPLEFT;
+		else if (menupos->second == TEXT("右上"))
+			mlm.MenuPos.type = TOPRIGHT;
+		else if (menupos->second == TEXT("左下"))
+			mlm.MenuPos.type = BOTTOMLEFT;
+		else if (menupos->second == TEXT("右下"))
+			mlm.MenuPos.type = BOTTOMRIGHT;
+		else {
+			int x = 0, y = 0;
+			if ((_stscanf_s(menupos->second.c_str(), TEXT("%d,%d"), &x, &y)) == 2) {
+				mlm.MenuPos.type = COORDINATE;
+				mlm.MenuPos.x = x;
+				mlm.MenuPos.y = y;
 			}
 		}
-		settingnode->Release();
 	}
 	return TRUE;
 }

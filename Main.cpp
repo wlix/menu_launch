@@ -99,9 +99,6 @@ PLUGIN_INFO g_info = {
 
 // TTBEvent_Init() の内部実装
 BOOL WINAPI Init() {
-    if (FAILED(::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED))) {
-        return FALSE;
-    }
     g_hMainWnd = CreateMainWnd(g_hInst, WNDCLASS_NAME, PLUGIN_NAME);
 
     WriteLog(elInfo, TEXT("%s: %s"), PLUGIN_NAME, TEXT("Successfully initialized"));
@@ -113,7 +110,6 @@ BOOL WINAPI Init() {
 // TTBEvent_Unload() の内部実装
 void WINAPI Unload() {
     ::DestroyWindow(g_hMainWnd);
-    ::CoUninitialize();
 
     WriteLog(elInfo, TEXT("%s: %s"), PLUGIN_NAME, TEXT("Successfully uninitialized"));
 }

@@ -13,6 +13,9 @@
       <UniqueIdentifier>{26b22302-f875-418a-9e15-e22b8ed5b7d6}</UniqueIdentifier>
       <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
     </Filter>
+    <Filter Include="Header Files\RapidXml">
+      <UniqueIdentifier>{6ab58530-d837-4dbc-912d-84b73f059261}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -67,6 +70,18 @@
     </ClInclude>
     <ClInclude Include="ml_xml.hpp">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="rapidxml.hpp">
+      <Filter>Header Files\RapidXml</Filter>
+    </ClInclude>
+    <ClInclude Include="rapidxml_iterators.hpp">
+      <Filter>Header Files\RapidXml</Filter>
+    </ClInclude>
+    <ClInclude Include="rapidxml_print.hpp">
+      <Filter>Header Files\RapidXml</Filter>
+    </ClInclude>
+    <ClInclude Include="rapidxml_utils.hpp">
+      <Filter>Header Files\RapidXml</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
