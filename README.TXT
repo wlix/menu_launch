@@ -1,57 +1,40 @@
-【ソフト名】 HotkeyCpp
-【著作権者】 Copyright (C) 2016 tapetums
+【ソフト名】 MenuLaunch for Win10
+【著作権者】 Copyright (C) 2020 wlix
 【種　　別】 TTBase プラグイン
-【動作環境】 Windows Vista/7/8/8.1/10 32/64-bit
-【開発環境】 Visual Studio Community 2015
+【動作環境】 Windows 10 64-bit
+【開発環境】 Visual Studio Community 2019
 
 
 【概要】
-簡易ホットキーランチャーです。
+メニューランチャーです。
 TTBase もしくは 互換プログラムのプラグインとして動作します。
 
 
 【依存関係】
-VC++14 の ランタイムが必要です。
+VC++16 の ランタイムが必要です。
 お持ちでない場合は、Microsoft社 のページからダウンロードをお願い致します。
 
-[Microsoft Visual C++ 2015 再頒布可能パッケージ Update 2]
-(https://www.microsoft.com/ja-JP/download/details.aspx?id=51682)
+[Microsoft Visual C++ 2015, 2017, 2019 再頒布可能パッケージ]
+(https://support.microsoft.com/ja-jp/help/2977003/the-latest-supported-visual-c-downloads)
 （デッドリンクの際はご容赦下さい。）
 
 
 【インストール】
 本体となるプログラムによります。
-TTBase の場合は、本体のインストールフォルダ以下の場所に配置してください。
-
-本体が 32-bit版 の場合は x86\HotkeyCpp.dll を、
-本体が 64-bit版 の場合は x64\HotkeyCpp.dll を それぞれお使いください。
+hako の場合は、本体のインストールフォルダ以下の場所に配置してください。
 
 
 【アンインストール】
-DLLファイル 及び .iniファイルを削除してください。
+DLLファイル 及び .xmlファイルを削除してください。
 常駐型のプラグインのため、本体を一旦終了させる必要があります。
 
 
 【使用方法】
-本体のコマンド一覧もしくはシステムメニューから「HotkeyCpp 設定」を選び、設定画面を表示します。
-「追加」ボタンを押し、登録したいホットキー、修飾キー、コマンドなどを登録します。
 
 
-【ホットキーの設定】
-・hotkey
-　ホットキーを登録します。エディットボックス内でキーを押すか、
-　横の▲▼をクリックしてキーを選んで下さい。
-　Enterなど、一部のキーは▲▼でしか選択できません。
-　なお、(なし)や (未定義) など、動作しないキーもあります。
 
-・command
-　インストールされているプラグイン、もしくは任意のファイルやプログラムを登録できます。
+【ランチャーメニューの設定】
 
-・ID
-　コマンドを登録した際に指定するコマンドIDです。横にコマンド名が表示されます。
-
-・param
-　コマンドではなく.exeファイルを指定した場合に、起動時にオプションとして指定する値です。
 
 
 【ライセンス】
@@ -60,34 +43,21 @@ http://www.kmonos.net/nysl/
 
 
 【謝辞】
-TTBase を生み出された K2 さん、peach を 公開されている U さん、TTBaseCpp の作者さんを始め、
+TTBase を生み出された K2 さん、hakoやTTBase Plugin Template を 公開されている tapetums さん、
+peach を 公開されている U さん、TTBaseCpp の作者さん、MenuLaunch を公開された作者さんを始め、
 数多くのプラグインを作られたそれぞれの作者さんたちに深い敬意と感謝を表します。
 https://osdn.jp/projects/ttbase/
+https://github.com/tapetums
 http://seesaawiki.jp/ttbase/d/
 http://white2.php.xdomain.jp/?page_id=27
 http://ttbase.coresv.com/uploader/
 
 
 【更新履歴】
-2016.05.22 v0.3.3.0
- ・コマンドIDを直接入力しても反映されない不具合を修正 (Thanks to y80qqvht)
-
-2016.04.16 v0.3.2.0
- ・設定ファイルを編集するたびに保存するようにした
-
-2016.03.23 v0.3.1.0
- ・コマンド名が正しく表示されない問題を修正
-
-2016.02.19 v0.3.0.0
- ・プラグインを再ロードした際に本体が落ちる問題を修正
-
-2016.02.17 v0.2.0.0
- ・仮想キーの文字列が正しく表示されるよう修正
-
-2016.02.16 v0.1.0.0
+2020.09.10 v0.0.0.1
  ・初版作成
 
 
 【文責】
-tapetums
-https://github.com/tapetums
+wlix
+http://wlix.wp.xdomain.jp/
