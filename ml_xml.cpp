@@ -248,11 +248,11 @@ BOOL WINAPI LoadXML(LPCTSTR szFileName, MLMenu& mlm) {
 	ifs.close();
 	xml_document<TCHAR> xml_doc;
 	try {
-		xml_doc.parse<0>(&xml.front());
+		xml_doc.parse<parse_default | parse_declaration_node>(&xml.front());
 	} catch (parse_error &err) {
 		LPTSTR buf;
 #if UNICODE || _UNICODE
-		wchar_t wch_err_what[512];
+		wchar_t wch_err_what[BUFSIZ];
 		MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, err.what(), strlen(err.what()), wch_err_what, sizeof(wch_err_what) / sizeof(wchar_t));
 		wsprintf(buf, TEXT("%s %s"), wch_err_what, err.where<TCHAR>());
 #else
@@ -263,6 +263,9 @@ BOOL WINAPI LoadXML(LPCTSTR szFileName, MLMenu& mlm) {
 	}
 	
 	xml_node<TCHAR> *node = xml_doc.first_node();
+	/* decla */
+
+	node = node->next_sibling();
 	if (lstrcmpi(node->name(), TEXT("menulaunch")) != 0) {
 		MessageBox(NULL, TEXT("XMLファイルに<menulaunch>が見当たりません"), TEXT("設定ファイルの読み込みエラー"), MB_OK | MB_ICONERROR);
 		return FALSE;

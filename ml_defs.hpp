@@ -12,6 +12,8 @@
 #include <map>
 #include <windows.h>
 
+#define BUFSIZ 512
+
 #define IDM_POPUPMENU_BYCOMMAND 10000
 #define IDM_POPUPMENU_BYMOUSE   10001
 

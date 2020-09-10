@@ -16,6 +16,9 @@
     <Filter Include="Header Files\RapidXml">
       <UniqueIdentifier>{6ab58530-d837-4dbc-912d-84b73f059261}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\tapetums">
+      <UniqueIdentifier>{0db55c8f-eedb-48d6-8aea-7c7933c43b27}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -82,6 +85,9 @@
     </ClInclude>
     <ClInclude Include="rapidxml_utils.hpp">
       <Filter>Header Files\RapidXml</Filter>
+    </ClInclude>
+    <ClInclude Include="Transcode.hpp">
+      <Filter>Header Files\tapetums</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
