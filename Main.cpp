@@ -6,7 +6,6 @@
 //
 //---------------------------------------------------------------------------//
 
-#include <windows.h>
 #include <strsafe.h>
 
 #include "Plugin.hpp"

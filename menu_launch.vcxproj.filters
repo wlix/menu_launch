@@ -13,7 +13,7 @@
       <UniqueIdentifier>{26b22302-f875-418a-9e15-e22b8ed5b7d6}</UniqueIdentifier>
       <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
     </Filter>
-    <Filter Include="Header Files\RapidXml">
+    <Filter Include="Header Files\rapidxml">
       <UniqueIdentifier>{6ab58530-d837-4dbc-912d-84b73f059261}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -72,7 +72,7 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="rapidxml.hpp">
-      <Filter>Header Files\RapidXml</Filter>
+      <Filter>Header Files\rapidxml</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -81,7 +81,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="MenuLaunch.rc">
+    <ResourceCompile Include="menu_launch.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>

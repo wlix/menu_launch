@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{DEE7E45A-1A8C-492A-B7B7-E1A87640A60B}</ProjectGuid>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>MenuLaunch</ProjectName>
+    <ProjectName>menu_launch</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -339,7 +339,7 @@
     <None Include="TTBasePlugin.def" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="MenuLaunch.rc" />
+    <ResourceCompile Include="menu_launch.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

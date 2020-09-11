@@ -6,7 +6,7 @@ HWND WINAPI CreateMainWnd(HINSTANCE hInst, LPCTSTR ClassName, LPCTSTR WindowName
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 void WINAPI OnMenuRbuttonUp(HWND hWnd, WPARAM wp, LPARAM lp);
 int WINAPI GetMenuItemPosFromID(HMENU hMenu, int ID);
-void WINAPI window_ContextMenu(HWND hWnd, int wID, POINT pt);
+void WINAPI ContextMenu(HWND hWnd, size_t wID, POINT pt);
 void WINAPI OnExecuteCommand(HWND hWnd, WPARAM wp, LPARAM lp);
 void WINAPI Init(HWND hWnd);
 void WINAPI Uninit();

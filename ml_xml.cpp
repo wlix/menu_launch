@@ -39,7 +39,7 @@ BOOL StrToBOOL(LPCTSTR lpstr) {
 		TRUE : FALSE;
 }
 
-tstring WINAPI ml_ExpandEnvironmentStrings(const std::wstring& str) {
+tstring WINAPI WrappedExpandEnvironmentStrings(const std::wstring& str) {
 	int size = ExpandEnvironmentStrings(str.c_str(), NULL, 0);
 	if (size > 0) {
 		// std::vector<char> buff(size); 
@@ -50,7 +50,7 @@ tstring WINAPI ml_ExpandEnvironmentStrings(const std::wstring& str) {
 		// 一回目の ExpandEnvironmentStrings の戻り値がおかしいみたい？
 		// 対策として，バッファを大きめに確保する
 
-		std::vector<wchar_t> buff((INT32)size * 3);
+		std::vector<wchar_t> buff((INT64)size * 3);
 		ExpandEnvironmentStrings(str.c_str(), &buff[0], buff.size());
 		return std::wstring(&buff[0]);
 	}
@@ -115,11 +115,11 @@ HBITMAP WINAPI GetIconBitmap(const AttributeMap& attr) {
 	if (icon != attr.end()) {
 		AttributeMap::const_iterator index = attr.find("index");
 		if (index != attr.end()) {
-			ExtractIconEx(ml_ExpandEnvironmentStrings(icon->second).c_str(),
+			ExtractIconEx(WrappedExpandEnvironmentStrings(icon->second).c_str(),
 				StrToInt(index->second.c_str()), NULL, &hIcon, 1);
 		}
 		else {
-			if (SHGetFileInfo(ml_ExpandEnvironmentStrings(icon->second).c_str(),
+			if (SHGetFileInfo(WrappedExpandEnvironmentStrings(icon->second).c_str(),
 				0, &sfi, sizeof(SHFILEINFO), SHGFI_ICON | SHGFI_SMALLICON))
 				hIcon = sfi.hIcon;
 		}
@@ -127,7 +127,7 @@ HBITMAP WINAPI GetIconBitmap(const AttributeMap& attr) {
 	else {
 		AttributeMap::const_iterator path = attr.find("path");
 		if (path != attr.end()) {
-			if (SHGetFileInfo(ml_ExpandEnvironmentStrings(path->second).c_str(),
+			if (SHGetFileInfo(WrappedExpandEnvironmentStrings(path->second).c_str(),
 				0, &sfi, sizeof(SHFILEINFO), SHGFI_ICON | SHGFI_SMALLICON))
 				hIcon = sfi.hIcon;
 		}
@@ -173,19 +173,19 @@ BOOL WINAPI LoadMenuItems(xml_node<>* parent_node, HMENU hMenu, MLMenu& mlm) {
 		if (_strcmpi(node->name(), "item") == 0 ||
 			_strcmpi(node->name(), "execute") == 0) {
 			MenuItem mi = { MenuItem::EXECUTE };
-			mi.execute.Path = ml_ExpandEnvironmentStrings(attr_map["path"]);
-			mi.execute.Param = ml_ExpandEnvironmentStrings(attr_map["param"]);
+			mi.execute.Path = node->first_attribute("path")->value();
+			mi.execute.Param = WrappedExpandEnvironmentStrings(attr_map["param"]);
 			mlm.MenuItems.push_back(mi);
 
 			HBITMAP hBitmap = mlm.bShowIcon ? GetIconBitmap(attr_map) : NULL;
 			if (hBitmap != NULL)
 				mlm.hBitmaps.push_back(hBitmap);
-			int ID = mlm.MenuItems.size();
+			size_t ID = mlm.MenuItems.size();
 			AppendMenuItem(hMenu, attr_map["title"].c_str(), hBitmap, NULL, ID);
 		}
 		else if (_strcmpi(node->name(), "command") == 0) {
 			MenuItem mi = { MenuItem::PLUGINCOMMAND };
-			mi.command.PluginFilename = ml_ExpandEnvironmentStrings(attr_map["filename"]);
+			mi.command.PluginFilename = WrappedExpandEnvironmentStrings(attr_map["filename"]);
 			mi.command.CommandID = StrToInt(attr_map["id"].c_str());
 			mlm.MenuItems.push_back(mi);
 
@@ -201,7 +201,7 @@ BOOL WINAPI LoadMenuItems(xml_node<>* parent_node, HMENU hMenu, MLMenu& mlm) {
 					DestroyIcon(sfi.hIcon);
 				}
 			}
-			int ID = mlm.MenuItems.size();
+			size_t ID = mlm.MenuItems.size();
 			AppendMenuItem(hMenu, attr_map["title"].c_str(), hBitmap, NULL, ID);
 		}
 		else if (_strcmpi(node->name(), "submenu") == 0) {
@@ -215,10 +215,10 @@ BOOL WINAPI LoadMenuItems(xml_node<>* parent_node, HMENU hMenu, MLMenu& mlm) {
 
 			if (attr_map.find("path") != attr_map.end()) {
 				MenuItem mi = { MenuItem::EXECUTE };
-				mi.execute.Path = ml_ExpandEnvironmentStrings(attr_map["path"]);
-				mi.execute.Param = ml_ExpandEnvironmentStrings(attr_map["param"]);
+				mi.execute.Path = WrappedExpandEnvironmentStrings(attr_map["path"]);
+				mi.execute.Param = WrappedExpandEnvironmentStrings(attr_map["param"]);
 				mlm.MenuItems.push_back(mi);
-				int ID = mlm.MenuItems.size();
+				size_t ID = mlm.MenuItems.size();
 				AppendMenu(hSubMenu, MF_STRING | MF_OWNERDRAW, ID, TEXT(" "));
 				SetMenuDefaultItem(hSubMenu, ID, FALSE);
 			}
@@ -234,7 +234,7 @@ BOOL WINAPI LoadMenuItems(xml_node<>* parent_node, HMENU hMenu, MLMenu& mlm) {
 
 			HMENU hSubMenu = CreatePopupMenu();
 
-			FolderMenu fm = { ml_ExpandEnvironmentStrings(attr_map["path"]),
+			FolderMenu fm = { WrappedExpandEnvironmentStrings(attr_map["path"]),
 				attr_map.find("showicon") == attr_map.end() ?
 					mlm.bShowIcon : StrToBOOL(attr_map["showicon"].c_str()),
 				attr_map.find("folderonly") == attr_map.end() ?
@@ -326,7 +326,7 @@ BOOL WINAPI LoadXML(LPCTSTR szFileName, MLMenu& mlm) {
 
 	return TRUE;
 }
-
+/*
 BOOL WINAPI GetAttributes(xml_node<> *node, AttributeMap &attr_map) {
 	for (xml_attribute<> *attr = node->first_attribute(); attr; attr = attr->next_attribute()) {
 		std::wstring buf;
@@ -340,6 +340,18 @@ BOOL WINAPI GetAttributes(xml_node<> *node, AttributeMap &attr_map) {
 		attr_map.insert(std::make_pair(attr->name(), buf));
 	}
 	return TRUE;
+}
+*/
+std::wstring WINAPI to_mbcs(std::string str) {
+	std::wstring dest;
+	if (g_encoding == XML_TEXT_ENCODING::SHIFT_JIS) {
+		dest = multi_to_wide(str);
+	} else if (g_encoding == XML_TEXT_ENCODING::UTF_8) {
+		dest = utf8_to_wide(str);
+	} else if (g_encoding == XML_TEXT_ENCODING::UTF_16) {
+		dest = utf8_to_wide(utf16_to_utf8((char16_t*)&str.front()));
+	}
+	return std::wstring(dest.begin(), dest.end());
 }
 
 BOOL WINAPI LoadSettings(xml_node<>* node, MLMenu& mlm) {

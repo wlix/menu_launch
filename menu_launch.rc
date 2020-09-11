@@ -31,7 +31,7 @@ VS_VERSION_INFO VERSIONINFO
             VALUE "FileVersion", "0.0.0.1"
             VALUE "InternalName", "MenuLaunch"
             VALUE "LegalCopyright", "Copyright (C) 2020 wlix"
-            VALUE "OriginalFilename", "MenuLaunch"
+            VALUE "OriginalFilename", "menu_launch"
             VALUE "ProductVersion", "0.0.0.1"
         }
     }

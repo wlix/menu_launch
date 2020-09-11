@@ -15,7 +15,7 @@ typedef  std::map<std::string, std::wstring> AttributeMap;
 using namespace rapidxml;
 
 BOOL WINAPI StrToBOOL(LPCTSTR lpstr);
-std::wstring WINAPI ml_ExpandEnvironmentStrings(const std::wstring& str);
+std::wstring WINAPI WrappedExpandEnvironmentStrings(const std::wstring& str);
 BOOL WINAPI AppendMenuItem(HMENU hMenu, LPCTSTR lpStr, HBITMAP hBitmap, HMENU hSubmenu, UINT wID);
 HBITMAP WINAPI IconToBitmap(HICON hIcon);
 HBITMAP WINAPI GetIconBitmap(const AttributeMap& attr);

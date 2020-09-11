@@ -84,7 +84,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
             if (folder_ContextMenu(hWnd, hSelectedMenu, iSelectedMenuItemIndex, &pt))
                 break;
             else
-                window_ContextMenu(hWnd, GetMenuItemID(hSelectedMenu, iSelectedMenuItemIndex), pt);
+                ContextMenu(hWnd, GetMenuItemID(hSelectedMenu, iSelectedMenuItemIndex), pt);
         }
         return 0;
 
@@ -127,7 +127,7 @@ void WINAPI OnMenuRbuttonUp(HWND hWnd, WPARAM wp, LPARAM lp) {
         return;
     }
     else {
-        window_ContextMenu(hWnd, GetMenuItemID(hmenu, wp), pt);
+        ContextMenu(hWnd, GetMenuItemID(hmenu, wp), pt);
     }
 }
 
@@ -140,7 +140,7 @@ int WINAPI GetMenuItemPosFromID(HMENU hMenu, int ID) {
     return -1;
 }
 
-void WINAPI window_ContextMenu(HWND hWnd, int wID, POINT pt) {
+void WINAPI ContextMenu(HWND hWnd, size_t wID, POINT pt) {
     static BOOL bPopuped = FALSE; //2重にポップアップするのを防ぐ
 
     if (bPopuped)
@@ -181,7 +181,9 @@ void WINAPI window_ContextMenu(HWND hWnd, int wID, POINT pt) {
             break;
         case ID_OPENFOLDER:
             TCHAR szFolder[MAX_PATH];
-            lstrcpyn(szFolder, g_MLMenu.MenuItems[wID - 1].execute.Path.c_str(), MAX_PATH);
+            if (lstrcpyn(szFolder, g_MLMenu.MenuItems[wID - 1].execute.Path.c_str(), MAX_PATH) == NULL) {
+                return;
+            }
             PathRemoveFileSpec(szFolder);
             if (32 >= (int)ShellExecute(NULL, NULL, szFolder, NULL, NULL, SW_SHOWNORMAL))
                 MessageBox(hWnd, TEXT("開けません"), TEXT("エラー"), MB_OK);
@@ -194,8 +196,12 @@ void WINAPI window_ContextMenu(HWND hWnd, int wID, POINT pt) {
             break;
         case ID_RELOADXML:
             // メニューを消す
-            keybd_event(VK_MENU, 0, 0, 0);
-            keybd_event(VK_MENU, 0, KEYEVENTF_KEYUP, 0);
+            INPUT input;
+            input.type = INPUT_KEYBOARD;
+            input.ki = { VK_MENU, 0 };
+            SendInput(1, &input, sizeof(INPUT));
+            input.ki = { VK_MENU, 0, KEYEVENTF_KEYUP };
+            SendInput(1, &input, sizeof(INPUT));
 
             Uninit();
             Init(hWnd);
@@ -207,7 +213,7 @@ void WINAPI window_ContextMenu(HWND hWnd, int wID, POINT pt) {
 
 void WINAPI OnExecuteCommand(HWND hWnd, WPARAM wp, LPARAM lp) {
     POINT pt;
-    int ret;
+    size_t ret = 0;
     HWND hForeground;
     TPMPOS tp = { CURSOR };
 
@@ -291,7 +297,9 @@ BOOL WINAPI Execute(const tstring& Path, const tstring& Param, HWND hWnd) {
     TCHAR szDir[MAX_PATH];
     LPSTR pParam = NULL;
 
-    lstrcpyn(szDir, Path.c_str(), MAX_PATH);
+    if (lstrcpyn(szDir, Path.c_str(), MAX_PATH) == NULL) {
+        return FALSE;
+    }
     PathRemoveFileSpec(szDir);
     int ret = (int)ShellExecute(NULL, NULL, Path.c_str(), Param != TEXT("") ? Param.c_str() : NULL, szDir, SW_SHOWNORMAL);
     if (!(ret > 32))
@@ -309,7 +317,7 @@ BOOL WINAPI Execute(const tstring& Path, const tstring& Param, HWND hWnd) {
 //  TrackPopupMenuEx
 //---------------------------------------------------------
 BOOL WINAPI TrackPopupMenuExPos(HMENU hmenu, UINT fuFlags, TPMPOS* ptp, HWND hwnd, LPTPMPARAMS lptpm) {
-    int x, y;
+    int x = 0, y = 0;
     POINT pt;
     RECT rc;
 
