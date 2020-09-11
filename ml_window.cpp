@@ -42,7 +42,6 @@ HWND WINAPI CreateMainWnd(HINSTANCE hInst, LPCTSTR ClassName, LPCTSTR WindowName
         WS_EX_TOOLWINDOW, ClassName, WindowName,
         WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
         200, 200, NULL, NULL, hInst, NULL);
-    WriteLog(elInfo, TEXT("%s: create window ok"), g_info.Name);
 
     return hWnd;
 }
@@ -257,7 +256,7 @@ void WINAPI OnExecuteCommand(HWND hWnd, WPARAM wp, LPARAM lp) {
         break;
     case CMDID_RELOAD_SETTINGS:
         Uninit();
-        Init();
+        Init(hWnd);
         break;
     }
 }
