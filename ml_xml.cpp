@@ -7,7 +7,7 @@
 
 XML_TEXT_ENCODING g_encoding = XML_TEXT_ENCODING::SHIFT_JIS;
 
-std::wstring multi_to_wide(std::string const& src) {
+std::wstring WINAPI multi_to_wide(std::string const& src) {
 	auto const dest_size = ::MultiByteToWideChar(CP_ACP, 0U, src.data(), -1, nullptr, 0U);
 	std::vector<wchar_t> dest(dest_size, L'\0');
 	if (::MultiByteToWideChar(CP_ACP, 0U, src.data(), -1, dest.data(), dest.size()) == 0) {
@@ -18,7 +18,7 @@ std::wstring multi_to_wide(std::string const& src) {
 	return std::wstring(dest.begin(), dest.end());
 }
 
-std::wstring utf8_to_wide(std::string const& src) {
+std::wstring WINAPI utf8_to_wide(std::string const& src) {
 	auto const dest_size = ::MultiByteToWideChar(CP_UTF8, 0U, src.data(), -1, nullptr, 0U);
 	std::vector<wchar_t> dest(dest_size, L'\0');
 	if (::MultiByteToWideChar(CP_UTF8, 0U, src.data(), -1, dest.data(), dest.size()) == 0) {
@@ -29,7 +29,7 @@ std::wstring utf8_to_wide(std::string const& src) {
 	return std::wstring(dest.begin(), dest.end());
 }
 
-std::string utf16_to_utf8(std::u16string const& src) {
+std::string WINAPI utf16_to_utf8(std::u16string const& src) {
     std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
     return converter.to_bytes(src);
 }
@@ -173,7 +173,7 @@ BOOL WINAPI LoadMenuItems(xml_node<>* parent_node, HMENU hMenu, MLMenu& mlm) {
 		if (_strcmpi(node->name(), "item") == 0 ||
 			_strcmpi(node->name(), "execute") == 0) {
 			MenuItem mi = { MenuItem::EXECUTE };
-			mi.execute.Path = node->first_attribute("path")->value();
+			mi.execute.Path = WrappedExpandEnvironmentStrings(attr_map["path"]);
 			mi.execute.Param = WrappedExpandEnvironmentStrings(attr_map["param"]);
 			mlm.MenuItems.push_back(mi);
 
@@ -291,7 +291,6 @@ BOOL WINAPI LoadXML(LPCTSTR szFileName, MLMenu& mlm) {
 	}
 	
 	xml_node<> *node = xml_doc.first_node();
-	/* declaration */
 	if (_strcmpi(node->first_attribute("encoding")->value(), "Shift_JIS") == 0) {
 		g_encoding = XML_TEXT_ENCODING::SHIFT_JIS;
 	} else if (_strcmpi(node->first_attribute("encoding")->value(), "UTF-8") == 0
@@ -301,9 +300,6 @@ BOOL WINAPI LoadXML(LPCTSTR szFileName, MLMenu& mlm) {
 		|| _strcmpi(node->first_attribute("encoding")->value(), "UTF16") == 0) {
 		g_encoding = XML_TEXT_ENCODING::UTF_16;
 	}
-	TCHAR buff[512];
-	wsprintf(buff, TEXT("%d"), g_encoding);
-	MessageBox(NULL, buff, TEXT("g_encoding"), MB_OK);
 
 	node = node->next_sibling();
 	if (_strcmpi(node->name(), "menulaunch") != 0) {
@@ -326,22 +322,15 @@ BOOL WINAPI LoadXML(LPCTSTR szFileName, MLMenu& mlm) {
 
 	return TRUE;
 }
-/*
+
 BOOL WINAPI GetAttributes(xml_node<> *node, AttributeMap &attr_map) {
 	for (xml_attribute<> *attr = node->first_attribute(); attr; attr = attr->next_attribute()) {
-		std::wstring buf;
-		if (g_encoding == XML_TEXT_ENCODING::SHIFT_JIS) {
-			buf = multi_to_wide(attr->value());
-		} else if (g_encoding == XML_TEXT_ENCODING::UTF_8) {
-			buf = utf8_to_wide(attr->value());
-		} else if (g_encoding == XML_TEXT_ENCODING::UTF_16) {
-			buf = utf8_to_wide(utf16_to_utf8((char16_t *)attr->value()));
-		}
+		std::wstring buf = to_mbcs(attr->value());
 		attr_map.insert(std::make_pair(attr->name(), buf));
 	}
 	return TRUE;
 }
-*/
+
 std::wstring WINAPI to_mbcs(std::string str) {
 	std::wstring dest;
 	if (g_encoding == XML_TEXT_ENCODING::SHIFT_JIS) {

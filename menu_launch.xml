@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="Shift_JIS"?>
+
+<menulaunch>
+    <!--
+    setting
+    その他の設定
+        icon 
+            "yes" にするとアイコンを表示
+        menupos
+            メニューを表示する位置
+                "マウスカーソル", "中央", "左上", "右上", "左下", "右下", "[x座標],[y座標]"(例 "100,200")
+    -->
+    <setting icon="yes" menupos="中央"/>
+    <!--
+    menu
+    メニューの設定
+    execute (もしくはitem)
+        起動する項目を作ります。
+        title
+            名前
+             "&amp;"の次の文字はショートカットキーになります。
+        path
+            起動するファイルのパス
+
+        以下は省略可能
+        param
+            パラメータ
+        icon
+            アイコンのパス
+        index
+            iconで指定したファイルのアイコンの番号
+
+    command
+        TTBaseにインストールされているプラグインのコマンドを実行する項目を作ります。
+        title
+            名前
+             "&amp;"の次の文字はショートカットキーになります。
+        filename
+            プラグインのファイル名(TTBase.exeからの相対パス，省略可)
+        id
+            コマンドID
+
+        以下は省略可能
+        icon
+            アイコンのパス
+        index
+            iconで指定したファイルのアイコンの番号
+
+    folder
+        フォルダーを展開する項目を作ります。
+        title
+            名前 "&amp;"の次の文字はショートカットキーになります。
+        path
+            フォルダーのパス
+            マイコンピュータやコントロールパネルなどの特殊フォルダを指定したい場合は
+            "::{20D04FE0-3AEA-1069-A2D8-08002B30309D}"のようなクラスIDを指定してください。
+            参考：http://npc.nikkeibp.co.jp/npc/data/data_conpane/20050228conpane.txt
+            省略するとデスクトップを指定したことになります。
+
+        以下は省略可能
+        icon
+            アイコンのパス
+        index
+            iconで指定したファイルのアイコンの番号
+        showicon
+            アイコンを表示するかどうかを "yes" "no"で指定します。
+        folderonly
+            フォルダのみを表示するか，ファイルも表示するかを "yes" "no"で指定します。
+
+    submenu
+        サブメニューを作ります。
+        title
+            名前 "&amp;"の次の文字はショートカットキーになります。
+
+        以下は省略可能
+        icon
+            アイコンのパス
+        index
+            iconで指定したファイルのアイコンの番号を指定します。
+
+        サブメニューを持つ項目をダブルクリックすることで
+        以下の属性を指定したコマンドを起動することができます
+        path
+            起動するファイルのパス
+        param
+            パラメータ
+
+    separator
+        セパレータを作ります。
+    -->
+    <menu>
+        <submenu title="&amp;Net" icon="SHELL32.dll" index="14">
+            <execute title="Microsoft &amp;Edge" path="%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe"/>
+            <execute title="&amp;Firefox" path="%ProgramFiles%\Mozilla Firefox\firefox.exe"/>
+            <execute title="&amp;Google Chrome" path="%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"/>
+            <execute title="&amp;Thunderbird" path="%ProgramFiles%\Mozilla Thunderbird\thunderbird.exe"/>
+        </submenu>
+        <submenu title="&amp;Player" path="%USERPROFILE%\My Documents\My Music">
+            <execute title="&amp;Windows Media Player" path="%ProgramFiles%\Windows Media Player\wmplayer.exe"/>
+            <execute title="&amp;Real Player" path="%ProgramFiles(x86)%\GRETECH\GOMPlayer\GOM.exe"/>
+            <execute title="&amp;Volume" path="%SystemRoot%\system32\sndvol32.exe"/>
+        </submenu>
+        <submenu title="&amp;TTBaseシステム">
+            <command title="TTBaseの設定(&amp;S)" filename="Setting.dll" id="2" />
+            <command title="TTBaseのバージョン情報(&amp;A)" filename="Setting.dll" id="3" />
+        </submenu>
+        <submenu title="設定(&amp;S)">
+            <item title="設定ファイルを開く(&amp;O)" path="C:\WINDOWS\system32\notepad.exe" param="%ProgramFiles%\ttbase\MenuLaunch.xml"/>
+            <command title="設定の再読み込み(&amp;R)" filename="MenuLaunch.dll" id="3"/>
+        </submenu>
+        <folder title="デスクトップ(&amp;D)"/>
+        <folder title="マイコンピュータ(&amp;M)" path="::{20D04FE0-3AEA-1069-A2D8-08002B30309D}" folderonly="yes"/>
+        <folder title="コントロールパネル(&amp;C)" path="::{20D04FE0-3AEA-1069-A2D8-08002B30309D}\::{21EC2020-3AEA-1069-A2DD-08002B30309D}" showicon="no"/>
+        <separator/>
+        <execute title="&amp;ShutDown" path="shutdown" param="-s -t 0" icon="SHELL32.dll" index="27"/>
+        <execute title="&amp;LogOff" path="shutdown" param="-l" icon="SHELL32.dll" index="44"/>
+    </menu>
+</menulaunch>
